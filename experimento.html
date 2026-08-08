@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Experimento — Algoritmo Genético</title>
+
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+
+<style>
+    :root {
+        --bg: #f5f6f8;
+        --panel: #ffffff;
+        --border: #d9dde3;
+        --text: #20252b;
+        --muted: #68707a;
+        --accent: #0d6efd;
+        --code: #f3f4f6;
+        --green: #198754;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Segoe UI", Arial, sans-serif;
+        line-height: 1.5;
+    }
+
+    header {
+        background: #ffffff;
+        border-bottom: 1px solid var(--border);
+        padding: 28px 7%;
+    }
+
+    header h1 {
+        margin: 0 0 6px;
+        font-size: 30px;
+    }
+
+    header p {
+        margin: 0;
+        color: var(--muted);
+    }
+
+    main {
+        width: min(1180px, 92%);
+        margin: 28px auto 60px;
+    }
+
+    .cell {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        margin: 18px 0;
+        overflow: hidden;
+    }
+
+    .cell-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 14px;
+        background: #fafafa;
+        border-bottom: 1px solid var(--border);
+        font-size: 13px;
+        color: var(--muted);
+    }
+
+    .cell-header strong {
+        color: var(--text);
+    }
+
+    .run {
+        border: 1px solid #bfc6ce;
+        background: white;
+        border-radius: 6px;
+        padding: 5px 10px;
+        cursor: pointer;
+    }
+
+    .run:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    .markdown {
+        padding: 18px 20px;
+    }
+
+    .markdown h2, .markdown h3 {
+        margin-top: 0;
+    }
+
+    pre {
+        margin: 0;
+        padding: 18px;
+        background: var(--code);
+        overflow-x: auto;
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 13px;
+        line-height: 1.55;
+    }
+
+    code {
+        font-family: Consolas, "Courier New", monospace;
+    }
+
+    .output {
+        padding: 16px 18px;
+        border-top: 1px solid var(--border);
+        min-height: 20px;
+        background: white;
+    }
+
+    .output:empty {
+        display: none;
+    }
+
+    .note {
+        color: var(--muted);
+        font-size: 14px;
+    }
+
+    .plot {
+        width: 100%;
+        height: 620px;
+    }
+
+    .controls {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+    }
+
+    button.primary {
+        border: 0;
+        background: var(--accent);
+        color: white;
+        padding: 9px 14px;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+    button.secondary {
+        border: 1px solid #bfc6ce;
+        background: white;
+        padding: 9px 14px;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+    .status {
+        padding: 9px 12px;
+        background: #f8f9fa;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        display: inline-block;
+        font-family: Consolas, monospace;
+        font-size: 13px;
+    }
+
+    table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 14px;
+    }
+
+    th, td {
+        border: 1px solid var(--border);
+        padding: 7px 9px;
+        text-align: left;
+    }
+
+    th {
+        background: #f5f6f8;
+    }
+
+    .legend {
+        display: flex;
+        gap: 20px;
+        margin: 8px 0;
+        font-size: 14px;
+        color: var(--muted);
+    }
+
+    .legend span::before {
+        content: "";
+        display: inline-block;
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        margin-right: 6px;
+        background: #777;
+    }
+
+    .legend .best::before {
+        border-radius: 0;
+        background: #d63384;
+    }
+
+    footer {
+        text-align: center;
+        color: var(--muted);
+        font-size: 13px;
+        padding: 20px;
+    }
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>Experimento: Algoritmo Genético</h1>
+    <p>Una versión interactiva del experimento desarrollado originalmente en Python y Jupyter Notebook.</p>
+</header>
+
+<main>
+
+    <section class="cell">
+        <div class="cell-header">
+            <strong>Celda 1 — Importación y función objetivo</strong>
+            <span>Python original</span>
+        </div>
+
+        <pre><code>import numpy as np
+import matplotlib.pyplot as plt
+
+from IPython.display import HTML
+from matplotlib.animation import FuncAnimation
+
+def funcion_objetivo(x, y):
+    return (
+        0.08 * (x**2 + y**2)
+        - 5 * np.exp(-((x + 3)**2 + (y + 3)**2) / 2)
+        - 3 * np.exp(-((x - 3)**2 + (y - 2)**2) / 2)
+    )</code></pre>
+
+        <div class="markdown">
+            <p>
+                La función objetivo representa el problema que el algoritmo genético
+                intenta optimizar. En este experimento se busca minimizar su valor.
+            </p>
+        </div>
+    </section>
+
+    <section class="cell">
+        <div class="cell-header">
+            <strong>Celda 2 — Superficie de la función</strong>
+            <button class="run" onclick="mostrarSuperficie()">▶ Ejecutar</button>
+        </div>
+
+        <pre><code>x = np.linspace(-6, 6, 150)
+y = np.linspace(-6, 6, 150)
+
+X, Y = np.meshgrid(x, y)
+Z = funcion_objetivo(X, Y)
+
+fig = plt.figure(figsize=(10, 7))
+ax = fig.add_subplot(111, projection="3d")
+
+superficie = ax.plot_surface(
+    X, Y, Z,
+    cmap="viridis",
+    alpha=0.8
+)
+
+plt.show()</code></pre>
+
+        <div id="superficie" class="plot"></div>
+        <div id="out-superficie" class="output"></div>
+    </section>
+
+    <section class="cell">
+        <div class="cell-header">
+            <strong>Celda 3 — Población inicial</strong>
+            <button class="run" onclick="mostrarPoblacion()">▶ Ejecutar</button>
+        </div>
+
+        <pre><code>TAMANO_POBLACION = 30
+LIMITES = (-6, 6)
+
+poblacion = np.random.uniform(
+    LIMITES[0],
+    LIMITES[1],
+    size=(TAMANO_POBLACION, 2)
+)
+
+print(poblacion[:5])</code></pre>
+
+        <div id="out-poblacion" class="output"></div>
+    </section>
+
+    <section class="cell">
+        <div class="cell-header">
+            <strong>Celda 4 — Evaluación y operadores genéticos</strong>
+            <span>Python original</span>
+        </div>
+
+        <pre><code>def evaluar_poblacion(poblacion):
+    return funcion_objetivo(
+        poblacion[:, 0],
+        poblacion[:, 1]
+    )
+
+def seleccion_torneo(poblacion, fitness, tamano_torneo=3):
+    indices = np.random.choice(
+        len(poblacion),
+        tamano_torneo,
+        replace=False
+    )
+
+    mejor_indice = indices[np.argmin(fitness[indices])]
+    return poblacion[mejor_indice].copy()
+
+def cruza(padre1, padre2):
+    alpha = np.random.rand()
+    return alpha * padre1 + (1 - alpha) * padre2
+
+def mutacion(individuo, tasa_mutacion=0.15):
+    hijo = individuo.copy()
+
+    if np.random.rand() &lt; tasa_mutacion:
+        hijo += np.random.normal(0, 0.5, size=2)
+
+    return np.clip(
+        hijo,
+        LIMITES[0],
+        LIMITES[1]
+    )</code></pre>
+
+        <div class="markdown">
+            <p>
+                En esta parte aparecen los tres operadores principales utilizados en
+                el experimento: selección por torneo, cruza y mutación.
+                También se utiliza elitismo para conservar las mejores soluciones.
+            </p>
+        </div>
+    </section>
+
+    <section class="cell">
+        <div class="cell-header">
+            <strong>Celda 5 — Evolución de la población</strong>
+            <span>Python original</span>
+        </div>
+
+        <pre><code>ELITISMO = 2
+NUM_GENERACIONES = 50
+
+historial = []
+
+for generacion in range(NUM_GENERACIONES):
+
+    historial.append(poblacion.copy())
+
+    poblacion = nueva_generacion(
+        poblacion
+    )</code></pre>
+
+        <div class="markdown">
+            <p>
+                Cada generación conserva una parte de las mejores soluciones y crea
+                nuevos individuos mediante selección, cruza y mutación.
+            </p>
+        </div>
+    </section>
+
+    <section class="cell">
+        <div class="cell-header">
+            <strong>Celda 6 — Animación interactiva</strong>
+            <span>Equivalente JavaScript</span>
+        </div>
+
+        <div class="markdown">
+            <p>
+                Esta sección reproduce en el navegador la idea de la animación
+                realizada originalmente con <code>FuncAnimation</code>.
+                El algoritmo se ejecuta en JavaScript y la gráfica se dibuja con Plotly.
+            </p>
+
+            <div class="controls">
+                <button class="primary" onclick="iniciarExperimento()">▶ Ejecutar algoritmo</button>
+                <button class="secondary" onclick="reiniciarExperimento()">↻ Reiniciar</button>
+                <span id="estado" class="status">Listo para ejecutar</span>
+            </div>
+
+            <div class="legend">
+                <span>Población</span>
+                <span class="best">Mejor individuo</span>
+            </div>
+        </div>
+
+        <div id="grafica" class="plot"></div>
+    </section>
+
+    <section class="cell">
+        <div class="cell-header">
+            <strong>Celda 7 — Resultado</strong>
+            <span>Salida del experimento</span>
+        </div>
+
+        <div id="resultado" class="output">
+            Ejecuta el algoritmo para obtener el resultado.
+        </div>
+    </section>
+
+</main>
+
+<footer>
+    Experimento educativo sobre algoritmos genéticos — versión web para GitHub Pages.
+</footer>
+
+<script>
+const TAMANO_POBLACION = 30;
+const LIMITES = [-6, 6];
+const ELITISMO = 2;
+const NUM_GENERACIONES = 50;
+let historial = [];
+let poblacionActual = [];
+
+function funcionObjetivo(x, y) {
+    return (
+        0.08 * (x*x + y*y)
+        - 5 * Math.exp(-((x + 3)**2 + (y + 3)**2) / 2)
+        - 3 * Math.exp(-((x - 3)**2 + (y - 2)**2) / 2)
+    );
+}
+
+function aleatorio(min, max) {
+    return min + Math.random() * (max - min);
+}
+
+function poblacionInicial() {
+    const p = [];
+    for (let i = 0; i < TAMANO_POBLACION; i++) {
+        p.push([aleatorio(-6, 6), aleatorio(-6, 6)]);
+    }
+    return p;
+}
+
+function evaluarPoblacion(poblacion) {
+    return poblacion.map(ind => funcionObjetivo(ind[0], ind[1]));
+}
+
+function seleccionTorneo(poblacion, fitness, tamanoTorneo = 3) {
+    let mejor = null;
+    let mejorFitness = Infinity;
+
+    for (let i = 0; i < tamanoTorneo; i++) {
+        const indice = Math.floor(Math.random() * poblacion.length);
+
+        if (fitness[indice] < mejorFitness) {
+            mejorFitness = fitness[indice];
+            mejor = poblacion[indice];
+        }
+    }
+
+    return [...mejor];
+}
+
+function cruza(padre1, padre2) {
+    const alpha = Math.random();
+
+    return [
+        alpha * padre1[0] + (1 - alpha) * padre2[0],
+        alpha * padre1[1] + (1 - alpha) * padre2[1]
+    ];
+}
+
+function normal() {
+    let u = 0, v = 0;
+
+    while (u === 0) u = Math.random();
+    while (v === 0) v = Math.random();
+
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+function mutacion(individuo, tasaMutacion = 0.15) {
+    const hijo = [...individuo];
+
+    if (Math.random() < tasaMutacion) {
+        hijo[0] += normal() * 0.5;
+        hijo[1] += normal() * 0.5;
+    }
+
+    hijo[0] = Math.max(LIMITES[0], Math.min(LIMITES[1], hijo[0]));
+    hijo[1] = Math.max(LIMITES[0], Math.min(LIMITES[1], hijo[1]));
+
+    return hijo;
+}
+
+function nuevaGeneracion(poblacion) {
+    const fitness = evaluarPoblacion(poblacion);
+
+    const indices = [...Array(poblacion.length).keys()]
+        .sort((a, b) => fitness[a] - fitness[b]);
+
+    const nueva = [];
+
+    for (let i = 0; i < ELITISMO; i++) {
+        nueva.push([...poblacion[indices[i]]]);
+    }
+
+    while (nueva.length < TAMANO_POBLACION) {
+        const padre1 = seleccionTorneo(poblacion, fitness);
+        const padre2 = seleccionTorneo(poblacion, fitness);
+
+        let hijo = cruza(padre1, padre2);
+        hijo = mutacion(hijo);
+
+        nueva.push(hijo);
+    }
+
+    return nueva;
+}
+
+function ejecutarAlgoritmo() {
+    let poblacion = poblacionInicial();
+    historial = [];
+
+    for (let generacion = 0; generacion < NUM_GENERACIONES; generacion++) {
+        historial.push(poblacion.map(ind => [...ind]));
+        poblacion = nuevaGeneracion(poblacion);
+    }
+
+    poblacionActual = poblacion;
+}
+
+function construirSuperficie() {
+    const xs = [];
+    const ys = [];
+    const zs = [];
+
+    const pasos = 45;
+
+    for (let j = 0; j < pasos; j++) {
+        const y = -6 + (12 * j / (pasos - 1));
+        ys.push(y);
+
+        const fila = [];
+        const filaX = [];
+
+        for (let i = 0; i < pasos; i++) {
+            const x = -6 + (12 * i / (pasos - 1));
+            filaX.push(x);
+            fila.push(funcionObjetivo(x, y));
+        }
+
+        xs.push(filaX);
+        zs.push(fila);
+    }
+
+    return {
+        x: xs,
+        y: ys,
+        z: zs
+    };
+}
+
+function dibujarFrame(frame) {
+    const poblacion = historial[frame];
+    const fitness = evaluarPoblacion(poblacion);
+
+    let mejorIndice = 0;
+
+    for (let i = 1; i < fitness.length; i++) {
+        if (fitness[i] < fitness[mejorIndice]) {
+            mejorIndice = i;
+        }
+    }
+
+    const mejor = poblacion[mejorIndice];
+    const mejorFitness = fitness[mejorIndice];
+
+    const superficie = construirSuperficie();
+
+    const traceSuperficie = {
+        type: "surface",
+        x: superficie.x,
+        y: superficie.y,
+        z: superficie.z,
+        opacity: 0.55,
+        colorscale: "Viridis",
+        showscale: false,
+        name: "Función objetivo"
+    };
+
+    const tracePoblacion = {
+        type: "scatter3d",
+        mode: "markers",
+        x: poblacion.map(p => p[0]),
+        y: poblacion.map(p => p[1]),
+        z: fitness,
+        marker: {
+            size: 5
+        },
+        name: "Población"
+    };
+
+    const traceMejor = {
+        type: "scatter3d",
+        mode: "markers",
+        x: [mejor[0]],
+        y: [mejor[1]],
+        z: [mejorFitness],
+        marker: {
+            size: 12,
+            symbol: "diamond"
+        },
+        name: "Mejor individuo"
+    };
+
+    const layout = {
+        title: `Generación ${frame} — Mejor fitness: ${mejorFitness.toFixed(4)}`,
+        scene: {
+            xaxis: { title: "x" },
+            yaxis: { title: "y" },
+            zaxis: { title: "f(x,y)" }
+        },
+        margin: { l: 0, r: 0, b: 0, t: 55 }
+    };
+
+    Plotly.react(
+        "grafica",
+        [traceSuperficie, tracePoblacion, traceMejor],
+        layout,
+        {responsive: true}
+    );
+
+    document.getElementById("estado").textContent =
+        `Generación ${frame} / ${NUM_GENERACIONES - 1}`;
+
+    return {
+        mejor,
+        mejorFitness
+    };
+}
+
+async function iniciarExperimento() {
+    document.getElementById("estado").textContent = "Ejecutando...";
+    document.getElementById("resultado").innerHTML =
+        "El algoritmo está generando y evaluando las generaciones...";
+
+    ejecutarAlgoritmo();
+
+    for (let i = 0; i < historial.length; i++) {
+        const resultado = dibujarFrame(i);
+        await new Promise(resolve => setTimeout(resolve, 180));
+    }
+
+    const ultima = historial[historial.length - 1];
+    const fitness = evaluarPoblacion(ultima);
+
+    let mejorIndice = 0;
+
+    for (let i = 1; i < fitness.length; i++) {
+        if (fitness[i] < fitness[mejorIndice]) {
+            mejorIndice = i;
+        }
+    }
+
+    const mejor = ultima[mejorIndice];
+
+    document.getElementById("resultado").innerHTML = `
+        <strong>Resultado final</strong><br><br>
+        Mejor x: ${mejor[0].toFixed(4)}<br>
+        Mejor y: ${mejor[1].toFixed(4)}<br>
+        Fitness: ${fitness[mejorIndice].toFixed(4)}<br>
+        Generaciones: ${NUM_GENERACIONES}<br>
+        Población: ${TAMANO_POBLACION}<br>
+        Elitismo: ${ELITISMO}
+    `;
+}
+
+function reiniciarExperimento() {
+    historial = [];
+    poblacionActual = [];
+
+    Plotly.purge("grafica");
+
+    document.getElementById("estado").textContent =
+        "Listo para ejecutar";
+
+    document.getElementById("resultado").textContent =
+        "Ejecuta el algoritmo para obtener el resultado.";
+}
+
+function mostrarSuperficie() {
+    const s = construirSuperficie();
+
+    Plotly.newPlot(
+        "superficie",
+        [{
+            type: "surface",
+            x: s.x,
+            y: s.y,
+            z: s.z,
+            colorscale: "Viridis"
+        }],
+        {
+            title: "Superficie de la función objetivo",
+            scene: {
+                xaxis: { title: "x" },
+                yaxis: { title: "y" },
+                zaxis: { title: "f(x,y)" }
+            },
+            margin: { l: 0, r: 0, b: 0, t: 55 }
+        },
+        {responsive: true}
+    );
+
+    document.getElementById("out-superficie").textContent =
+        "La superficie representa el espacio de búsqueda del problema de optimización.";
+}
+
+function mostrarPoblacion() {
+    const p = poblacionInicial();
+    let html = "<table><tr><th>Individuo</th><th>x</th><th>y</th></tr>";
+
+    p.slice(0, 5).forEach((ind, i) => {
+        html += `
+            <tr>
+                <td>${i + 1}</td>
+                <td>${ind[0].toFixed(4)}</td>
+                <td>${ind[1].toFixed(4)}</td>
+            </tr>
+        `;
+    });
+
+    html += "</table><p class='note'>Se muestran los primeros 5 individuos de una población de 30.</p>";
+
+    document.getElementById("out-poblacion").innerHTML = html;
+}
+
+window.addEventListener("load", () => {
+    mostrarSuperficie();
+});
+</script>
+
+</body>
+</html>
